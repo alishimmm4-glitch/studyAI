@@ -1,0 +1,14 @@
+[build]
+  command = "npm install"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Every request to /api/* is routed to the single Express function above.
+# Example: a browser call to /api/auth/login becomes /.netlify/functions/api/auth/login,
+# and api.js rewrites it back to /api/auth/login before Express sees it.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

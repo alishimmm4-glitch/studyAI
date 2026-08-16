@@ -1,32 +1,31 @@
-const fs = require("fs");
 const path = require("path");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 
 /**
- * Extracts raw text from an uploaded PDF or DOCX file on disk.
- * Returns an empty string (never throws) if extraction fails, so the
- * calling controller can degrade gracefully instead of 500-ing.
+ * Extracts raw text from an in-memory file buffer (PDF or DOCX).
+ * Works on any hosting model — traditional server or serverless — since it
+ * never touches disk. Returns an empty string (never throws) on failure so
+ * the calling controller can degrade gracefully instead of 500-ing.
  */
-async function extractTextFromFile(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
+async function extractTextFromBuffer(buffer, originalName) {
+  const ext = path.extname(originalName).toLowerCase();
   try {
     if (ext === ".pdf") {
-      const buffer = fs.readFileSync(filePath);
       const result = await pdfParse(buffer);
       return result.text || "";
     }
     if (ext === ".docx") {
-      const result = await mammoth.extractRawText({ path: filePath });
+      const result = await mammoth.extractRawText({ buffer });
       return result.value || "";
     }
     // .doc (legacy binary word format) has no reliable pure-JS parser;
-    // we store the file but skip text extraction.
+    // we still store the note but skip text extraction.
     return "";
   } catch (err) {
-    console.error(`Text extraction failed for ${filePath}: ${err.message}`);
+    console.error(`Text extraction failed for ${originalName}: ${err.message}`);
     return "";
   }
 }
 
-module.exports = extractTextFromFile;
+module.exports = extractTextFromBuffer;

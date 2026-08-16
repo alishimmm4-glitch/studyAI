@@ -1,41 +1,32 @@
 const asyncHandler = require("express-async-handler");
-const fs = require("fs");
 const Note = require("../models/Note");
 const Summary = require("../models/Summary");
 const Quiz = require("../models/Quiz");
 const FlashcardDeck = require("../models/FlashcardDeck");
 const ApiResponse = require("../utils/ApiResponse");
 const ApiError = require("../utils/ApiError");
-const extractTextFromFile = require("../utils/extractText");
+const extractTextFromBuffer = require("../utils/extractText");
 
 /**
  * @route   POST /api/notes
- * @desc    Upload a PDF/DOCX note, extract its text in the background
+ * @desc    Upload a PDF/DOCX note, extract its text immediately (in-memory —
+ *          no file is ever written to disk, so this works on serverless too)
  * @access  Private
  */
 const uploadNote = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "No file uploaded");
 
+  const text = await extractTextFromBuffer(req.file.buffer, req.file.originalname);
+
   const note = await Note.create({
     user: req.user._id,
     originalName: req.file.originalname,
-    storedFilename: req.file.filename,
     fileExt: req.file.originalname.split(".").pop().toUpperCase(),
     fileSizeBytes: req.file.size,
     mimeType: req.file.mimetype,
-    status: "processing",
+    extractedText: text,
+    status: text ? "ready" : "failed",
   });
-
-  // Extract text synchronously (fine for typical note sizes); mark ready/failed.
-  try {
-    const text = await extractTextFromFile(req.file.path);
-    note.extractedText = text;
-    note.status = "ready";
-    await note.save();
-  } catch (err) {
-    note.status = "failed";
-    await note.save();
-  }
 
   new ApiResponse(res, 201, "Note uploaded successfully", { note: sanitizeNote(note) });
 });
@@ -63,19 +54,12 @@ const getNote = asyncHandler(async (req, res) => {
 
 /**
  * @route   DELETE /api/notes/:id
- * @desc    Delete a note, its file on disk, and any derived content
+ * @desc    Delete a note and any derived content
  * @access  Private
  */
 const deleteNote = asyncHandler(async (req, res) => {
   const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
   if (!note) throw new ApiError(404, "Note not found");
-
-  const filePath = require("path").join(
-    process.cwd(),
-    process.env.UPLOAD_DIR || "uploads",
-    note.storedFilename
-  );
-  fs.unlink(filePath, () => {}); // best-effort; ignore errors
 
   await Promise.all([
     Summary.deleteMany({ note: note._id }),

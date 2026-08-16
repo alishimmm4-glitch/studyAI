@@ -41,7 +41,10 @@ studyai-backend/
 │       ├── generateToken.js
 │       ├── ApiError.js / ApiResponse.js
 │       └── seed.js              # optional demo-data seeder
-├── uploads/                    # uploaded note files (gitignored)
+├── netlify/
+│   └── functions/
+│       └── api.js              # wraps the Express app for Netlify Functions
+├── netlify.toml                 # routes /api/* to the function above
 ├── .env.example
 ├── API_DOCUMENTATION.md
 └── package.json
@@ -104,6 +107,9 @@ the full endpoint contract, and the accompanying `frontend-api-client` folder fo
 
 - Swap `aiService.js` internals for a real LLM call (OpenAI/Anthropic) — the function
   signatures are already shaped for a drop-in replacement.
-- Move file storage to S3/Cloud Storage instead of local disk for multi-instance deployments.
+- Notes are processed fully in-memory (uploaded buffer → text extraction → discarded) —
+  nothing is written to disk, which is what makes this deployable to Netlify Functions
+  as-is. If you later want to let users re-download their original file, add S3/Cloud
+  Storage rather than local disk (serverless filesystems don't persist between invocations).
 - Add a background job queue (BullMQ) if text extraction / AI generation becomes slow at scale.
 - Add refresh-token rotation if you need shorter-lived access tokens with silent renewal.

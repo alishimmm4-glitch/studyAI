@@ -63,13 +63,16 @@ List the user's uploaded notes.
 
 ### POST `/`
 `multipart/form-data` with field `file` (PDF/DOC/DOCX, max 20MB).
-Extracts text server-side (pdf-parse / mammoth) and sets `status: "ready" | "failed"`.
+Text is extracted server-side (pdf-parse / mammoth) directly from the uploaded buffer — the
+file itself is never written to disk, so this works unchanged on serverless hosts. Sets
+`status: "ready" | "failed"` based on whether extractable text was found.
 
 ### GET `/:id`
 Get a single note's metadata.
 
 ### DELETE `/:id`
-Deletes the note, its file on disk, and any derived summaries/quizzes/flashcard decks.
+Deletes the note record and any derived summaries/quizzes/flashcard decks. (No file exists on
+disk to clean up — uploads are processed in-memory only, see the note below.)
 
 ---
 

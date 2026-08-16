@@ -36,8 +36,10 @@ app.use(xss());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use("/api", apiLimiter);
 
-// --- Static file serving for uploaded notes (read-only) ---
-app.use("/uploads", express.static(require("path").join(process.cwd(), process.env.UPLOAD_DIR || "uploads")));
+// --- Static file serving removed: notes are processed in-memory only
+// (buffer -> text extraction -> discard), so no uploaded files persist on
+// disk. This keeps the API stateless and serverless-friendly (Netlify
+// Functions have a read-only/ephemeral filesystem).
 
 // --- Health check ---
 app.get("/api/health", (req, res) => {

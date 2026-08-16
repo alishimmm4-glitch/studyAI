@@ -101,41 +101,43 @@ being picked up correctly — fix that first.
 4. **Connect → Drivers** → copy the connection string, e.g.
    `mongodb+srv://user:password@cluster0.xxxxx.mongodb.net/studyai`
 
-### 2. Backend → Render.com
+### 2. Backend → Netlify (serverless functions)
 
-Netlify/Vercel run serverless functions, not a persistent Express server — Render fits this
-project's architecture directly.
+The Express app is wrapped as a single Netlify Function (`backend/netlify/functions/api.js`),
+with `backend/netlify.toml` routing every `/api/*` request to it. File uploads are processed
+fully in-memory (no disk writes), which is what makes this work on Netlify's read-only
+serverless filesystem.
 
-1. Sign up at [render.com](https://render.com) with GitHub
-2. **New +** → **Web Service** → select this repo
+1. Sign up at [netlify.com](https://netlify.com) with GitHub
+2. **Add new site** → **Import an existing project** → **Deploy with GitHub** → select this repo
 3. Settings:
 
    | Setting | Value |
    |---|---|
-   | Root Directory | `backend` |
-   | Build Command | `npm install` |
-   | Start Command | `npm start` |
-   | Instance Type | Free |
+   | Base directory | `backend` |
+   | Build command | `npm install` |
+   | Publish directory | `backend` |
+   | Functions directory | `backend/netlify/functions` (auto-read from `netlify.toml`) |
 
-4. Add environment variables (Render dashboard → Environment):
+4. **Site configuration → Environment variables** — add:
    ```
    NODE_ENV=production
-   PORT=5000
    MONGO_URI=<your Atlas connection string>
    JWT_SECRET=<a long random string — generate with: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))">
    JWT_EXPIRES_IN=7d
    JWT_EXPIRES_IN_REMEMBER=30d
    MAX_FILE_SIZE_MB=20
-   UPLOAD_DIR=uploads
    RATE_LIMIT_WINDOW_MIN=15
    RATE_LIMIT_MAX=200
    CLIENT_URL=          # fill in after step 3, once you have the Vercel URL
    ```
-5. Deploy. You'll get a URL like `https://studyai-backend.onrender.com`. Confirm it's live by
-   visiting `https://studyai-backend.onrender.com/api/health`.
+5. **Deploy site**. You'll get a URL like `https://studyai-backend.netlify.app`. Confirm it's
+   live by visiting `https://studyai-backend.netlify.app/api/health`.
 
-> Free Render instances spin down after inactivity — the first request after idle can take
-> ~30–60s to wake up. Fine for a demo/portfolio project.
+> **Serverless caveats worth knowing:** cold starts add ~1–3s of latency to the first request
+> after idle; the built-in rate limiter's counters reset whenever a fresh function instance
+> spins up (each instance has its own memory), so rate limiting is best-effort rather than
+> exact under serverless. Neither affects correctness for a demo/portfolio deployment.
 
 ### 3. Frontend → Vercel
 
@@ -152,24 +154,25 @@ project's architecture directly.
 
 4. Environment variable:
    ```
-   VITE_API_URL=https://studyai-backend.onrender.com/api
+   VITE_API_URL=https://studyai-backend.netlify.app/api
    ```
-   (use your actual Render URL from step 2)
+   (use your actual Netlify URL from step 2)
 5. Deploy. You'll get a URL like `https://studyai-app.vercel.app`.
 
 ### 4. Connect the two (required — CORS)
 
-Go back to Render → your backend service → Environment → set:
+Go back to Netlify → your backend site → **Site configuration → Environment variables** → set:
 ```
 CLIENT_URL=https://studyai-app.vercel.app
 ```
-Save — Render auto-restarts the service. Without this step, the browser will block API
-requests from the live frontend to the live backend.
+Save, then **Deploys → Trigger deploy → Clear cache and deploy site** so the function picks up
+the new value. Without this step, the browser will block API requests from the live frontend
+to the live backend.
 
 ### Post-deploy checklist
 
-- [ ] `GET https://<render-url>/api/health` returns `{ "success": true, ... }`
+- [ ] `GET https://<netlify-url>/api/health` returns `{ "success": true, ... }`
 - [ ] Signing up / logging in on the live frontend actually creates a user in MongoDB Atlas (check the **Collections** tab in Atlas)
-- [ ] `CLIENT_URL` on Render matches the exact Vercel URL (including `https://`, no trailing slash)
+- [ ] `CLIENT_URL` on Netlify matches the exact Vercel URL (including `https://`, no trailing slash)
 - [ ] No `.env` file is visible in the GitHub repo — only `.env.example`
 

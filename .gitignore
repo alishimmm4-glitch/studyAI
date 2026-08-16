@@ -12,10 +12,11 @@ frontend/.env
 dist/
 build/
 
-# Backend uploads (user files shouldn't live in git)
-backend/uploads/*
-!backend/uploads/.gitkeep
 
 # Logs / OS junk
 *.log
 .DS_Store
+
+# Editor config (don't commit personal editor settings)
+.vscode/
+*.code-workspace
