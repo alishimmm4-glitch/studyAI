@@ -8,26 +8,6 @@ studyai-app/
 └── frontend/    React + Vite + Tailwind + Recharts client
 ```
 
-## Open in VS Code
-
-Simplest way — open the whole project as one folder (both `backend/` and `frontend/` show up
-in the same Explorer sidebar):
-
-```bash
-code studyai-app
-```
-
-Or open it as a **multi-root workspace** (each folder gets its own root, useful if you want
-separate per-folder settings/extensions):
-
-```bash
-code studyai-app/studyai-app.code-workspace
-```
-
-Two integrated terminals (`` Ctrl+Shift+` `` twice), one `cd backend`, one `cd frontend`, run
-both dev servers side by side. A `Debug Backend (server.js)` launch config is included under
-Run & Debug (F5) for stepping through the API with breakpoints.
-
 ## Quick start
 
 **1. Backend**
