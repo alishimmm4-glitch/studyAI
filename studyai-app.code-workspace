@@ -1,0 +1,27 @@
+{
+  "folders": [
+    { "name": "Backend (API)", "path": "backend" },
+    { "name": "Frontend (Vite)", "path": "frontend" }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/package-lock.json": true,
+      "**/dist": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "mongodb.mongodb-vscode",
+      "humao.rest-client"
+    ]
+  }
+}
